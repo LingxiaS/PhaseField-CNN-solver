@@ -21,13 +21,13 @@ def run_allen_cahn():
     plot_interval = 500
 
     # --- Initial Condition ---
-    # You mentioned av=0.5, but for Allen-Cahn a mean of 0.0 generates the best
+    # for Allen-Cahn a mean of 0.0
     # maze-like structure before coarsening.
     average_u = 0.0
     noise_magnitude = 0.1
 
     # Generate random noise: u is between (average - noise) and (average + noise)
-    np.random.seed(42) # Seeded so you can compare exactly across runs
+    np.random.seed(42) # a fixed seed
     u = average_u + noise_magnitude * (np.random.rand(Lx, Ly) * 2.0 - 1.0)
 
     # Set up plotting
