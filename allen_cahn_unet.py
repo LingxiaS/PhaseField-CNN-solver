@@ -3,53 +3,57 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import os
+import concurrent.futures
 
 # ==========================================
-# 1. Data Generation (FDM Background)
+# 1. Data Generation (Multi-Core FDM)
 # ==========================================
 def compute_laplacian(u, dx=1.0):
     return (np.roll(u, -1, axis=0) + np.roll(u, 1, axis=0) + 
             np.roll(u, -1, axis=1) + np.roll(u, 1, axis=1) - 4.0 * u) / (dx ** 2)
 
-def generate_multi_frame_data(num_samples=50):
-    print(f"Generating {num_samples} samples using FDM...")
+def _generate_train_sample(seed):
+    """Generates a single training sample mapping t=300 to t=400."""
+    np.random.seed(seed)
     Lx, Ly = 200, 200
     dx, dt, epsilon, W, L = 1.0, 0.05, 1.0, 1.0, 1.0
     
-    # Input X: 2 channels (t=300, t=400)
-    # Output Y: 1 channel (t=500)
-    X_data = np.zeros((num_samples, 2, Lx, Ly), dtype=np.float32)
-    Y_data = np.zeros((num_samples, 1, Lx, Ly), dtype=np.float32)
+    u = 0.1 * (np.random.rand(Lx, Ly) * 2.0 - 1.0)
     
-    for i in range(num_samples):
-        np.random.seed(42 + i)
-        u = 0.1 * (np.random.rand(Lx, Ly) * 2.0 - 1.0)
+    # Evolve from t=0 to t=300 (Input state)
+    for _ in range(300):
+        u = u + L * dt * ((epsilon ** 2) * compute_laplacian(u, dx) - W * ((u ** 3) - u))
+    frame_300 = u.copy()
+    
+    # Evolve from t=300 to t=400 (Target state)
+    for _ in range(100):
+        u = u + L * dt * ((epsilon ** 2) * compute_laplacian(u, dx) - W * ((u ** 3) - u))
+    frame_400 = u.copy()
+    
+    return frame_300, frame_400
+
+def generate_training_data(num_samples=50):
+    num_cores = os.cpu_count()
+    print(f"Generating {num_samples} training samples using {num_cores} cores...")
+    
+    X_data = np.zeros((num_samples, 1, 200, 200), dtype=np.float32)
+    Y_data = np.zeros((num_samples, 1, 200, 200), dtype=np.float32)
+    
+    # Use seeds 100 to 149 to keep seed 42 strictly for testing
+    seeds = [100 + i for i in range(num_samples)]
+    
+    with concurrent.futures.ProcessPoolExecutor(max_workers=num_cores) as executor:
+        results = list(executor.map(_generate_train_sample, seeds))
         
-        # Burn-in to t=300 (Frame 1)
-        for _ in range(300):
-            laplacian = compute_laplacian(u, dx)
-            u = u + L * dt * ((epsilon ** 2) * laplacian - W * ((u ** 3) - u))
-        X_data[i, 0, :, :] = u.copy()
-        
-        # Evolve to t=400 (Frame 2)
-        for _ in range(100):
-            laplacian = compute_laplacian(u, dx)
-            u = u + L * dt * ((epsilon ** 2) * laplacian - W * ((u ** 3) - u))
-        X_data[i, 1, :, :] = u.copy()
-        
-        # Target t=500 (Target Frame)
-        for _ in range(100):
-            laplacian = compute_laplacian(u, dx)
-            u = u + L * dt * ((epsilon ** 2) * laplacian - W * ((u ** 3) - u))
-        Y_data[i, 0, :, :] = u.copy()
-        
-        if (i+1) % 10 == 0:
-            print(f"  -> Generated {i+1}/{num_samples} samples")
+    for i, (f300, f400) in enumerate(results):
+        X_data[i, 0, :, :] = f300
+        Y_data[i, 0, :, :] = f400
             
+    print("Training data generation complete!")
     return torch.tensor(X_data), torch.tensor(Y_data)
 
 # ==========================================
-# 2. U-Net Architecture (2-Channel Input)
+# 2. U-Net Architecture (1-Channel Input)
 # ==========================================
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -65,11 +69,11 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.double_conv(x)
 
-class MultiFrameUNet(nn.Module):
+class SimpleUNet(nn.Module):
     def __init__(self):
         super().__init__()
-        # Note: in_channels is now 2
-        self.inc = DoubleConv(2, 16)
+        # Input channel is 1 (t=300) to predict 1 channel (t=400)
+        self.inc = DoubleConv(1, 16)
         self.down1 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(16, 32))
         self.down2 = nn.Sequential(nn.MaxPool2d(2), DoubleConv(32, 64))
         
@@ -97,34 +101,25 @@ class MultiFrameUNet(nn.Module):
         return self.outc(x)
 
 # ==========================================
-# 3. Main Training Execution
+# 3. Main Script
 # ==========================================
 if __name__ == "__main__":
-    # Ensure reproducibility
     torch.manual_seed(42)
     
-    # 1. Prepare Data
-    # For a real run, increase num_samples to 200+
-    num_total_samples = 40
-    X_all, Y_all = generate_multi_frame_data(num_samples=num_total_samples)
+    # --- Part A: Train the Model ---
+    X_train, Y_train = generate_training_data(num_samples=50)
     
-    split_idx = int(num_total_samples * 0.8)
-    X_train, Y_train = X_all[:split_idx], Y_all[:split_idx]
-    X_test, Y_test = X_all[split_idx:], Y_all[split_idx:]
-    
-    # 2. Setup Device and Model
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Training U-Net on device: {device}...")
     
-    model = MultiFrameUNet().to(device)
+    model = SimpleUNet().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
     
     X_train, Y_train = X_train.to(device), Y_train.to(device)
     
-    # 3. Train
-    epochs = 400
-    batch_size = 8
+    epochs = 500
+    batch_size = 10
     
     for epoch in range(epochs):
         permutation = torch.randperm(X_train.size()[0])
@@ -139,50 +134,71 @@ if __name__ == "__main__":
             loss = criterion(outputs, batch_y)
             loss.backward()
             optimizer.step()
-            
             epoch_loss += loss.item()
             
         if (epoch + 1) % 50 == 0:
             avg_loss = epoch_loss / (X_train.size()[0] / batch_size)
             print(f"Epoch {epoch+1:03d}/{epochs} | Loss: {avg_loss:.6f}")
             
-    # ==========================================
-    # 4. Autoregressive Testing & Visualization
-    # ==========================================
-    print("Running autoregressive inference...")
+    # --- Part B: Test on Unseen Seed (42) ---
+    print("\nStarting inference test on UNSEEN seed (42)...")
+    
+    # 1. Run FDM to get Ground Truth for seed 42
+    np.random.seed(42)
+    u_test = 0.1 * (np.random.rand(200, 200) * 2.0 - 1.0)
+    dx, dt, epsilon, W, L = 1.0, 0.05, 1.0, 1.0, 1.0
+    
+    for _ in range(300):
+        u_test = u_test + L * dt * ((epsilon ** 2) * compute_laplacian(u_test, dx) - W * ((u_test ** 3) - u_test))
+    test_t300_gt = u_test.copy()
+    
+    for _ in range(100):
+        u_test = u_test + L * dt * ((epsilon ** 2) * compute_laplacian(u_test, dx) - W * ((u_test ** 3) - u_test))
+    test_t400_gt = u_test.copy()
+    
+    for _ in range(100):
+        u_test = u_test + L * dt * ((epsilon ** 2) * compute_laplacian(u_test, dx) - W * ((u_test ** 3) - u_test))
+    test_t500_gt = u_test.copy()
+
+    # 2. Use trained U-Net to predict
     model.eval()
     with torch.no_grad():
-        # Get the first test sample
-        # Shape: (1, 2, 200, 200) representing [t=300, t=400]
-        current_input = X_test[0:1].to(device)
+        # Prepare input tensor: shape (1, 1, 200, 200)
+        input_tensor = torch.tensor(test_t300_gt, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)
         
-        fig, axes = plt.subplots(1, 4, figsize=(16, 4))
+        # Predict t=400
+        pred_t400 = model(input_tensor)
         
-        # Plot the first frame of the input (t=300)
-        axes[0].imshow(current_input[0, 0].cpu().numpy(), cmap='coolwarm', vmin=-1, vmax=1)
-        axes[0].set_title("Input (t=300)")
-        axes[0].axis('off')
+        # Autoregressive: use predicted t=400 to predict t=500
+        pred_t500 = model(pred_t400)
         
-        # Plot the second frame of the input (t=400)
-        axes[1].imshow(current_input[0, 1].cpu().numpy(), cmap='coolwarm', vmin=-1, vmax=1)
-        axes[1].set_title("Input (t=400)")
-        axes[1].axis('off')
-        
-        # Predict the next two steps iteratively
-        for i in range(2, 4):
-            # Predict next frame (e.g., t=500)
-            next_frame = model(current_input)
-            
-            axes[i].imshow(next_frame[0, 0].cpu().numpy(), cmap='coolwarm', vmin=-1, vmax=1)
-            axes[i].set_title(f"Prediction (t={300 + i*100})")
-            axes[i].axis('off')
-            
-            # Autoregressive update: 
-            # Old Frame 2 becomes New Frame 1
-            # Predicted Frame becomes New Frame 2
-            new_input = torch.cat([current_input[:, 1:2, :, :], next_frame], dim=1)
-            current_input = new_input
-            
+        pred_t400_np = pred_t400[0, 0].cpu().numpy()
+        pred_t500_np = pred_t500[0, 0].cpu().numpy()
+
+    # --- Part C: Visualization ---
+    print("Saving comparison plot...")
+    fig, axes = plt.subplots(1, 5, figsize=(20, 4))
+    
+    axes[0].imshow(test_t300_gt, cmap='coolwarm', vmin=-1, vmax=1)
+    axes[0].set_title("Input (t=300)\nSeed: 42")
+    axes[0].axis('off')
+    
+    axes[1].imshow(test_t400_gt, cmap='coolwarm', vmin=-1, vmax=1)
+    axes[1].set_title("FDM Ground Truth (t=400)")
+    axes[1].axis('off')
+    
+    axes[2].imshow(pred_t400_np, cmap='coolwarm', vmin=-1, vmax=1)
+    axes[2].set_title("U-Net Prediction (t=400)")
+    axes[2].axis('off')
+    
+    axes[3].imshow(test_t500_gt, cmap='coolwarm', vmin=-1, vmax=1)
+    axes[3].set_title("FDM Ground Truth (t=500)")
+    axes[3].axis('off')
+    
+    axes[4].imshow(pred_t500_np, cmap='coolwarm', vmin=-1, vmax=1)
+    axes[4].set_title("U-Net Prediction (t=500)")
+    axes[4].axis('off')
+    
     plt.tight_layout()
-    plt.savefig("unet_predictions.png", dpi=150)
-    print("Saved evaluation plot to unet_predictions.png")
+    plt.savefig("allen_cahn_unet_prediction_compare.png", dpi=150)
+    print("Done!.")
