@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
     # --- Part C: Visualization ---
     print("Saving comparison plot...")
-    fig, axes = plt.subplots(1, 5, figsize=(20, 4))
+    fig, axes = plt.subplots(1, 5, figsize=(20, 5))
     
     axes[0].imshow(test_t300_gt, cmap='coolwarm', vmin=-1, vmax=1)
     axes[0].set_title("Input (t=300)\nSeed: 42")
