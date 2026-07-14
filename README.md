@@ -4,7 +4,7 @@ This repository implements a Convolutional Neural Network (U-Net) as an autoregr
 
 ### The Governing Physics
 
-The model learns the discrete time evolution of the Allen-Cahn equation. Based on the explicit finite difference scheme implemented in the physics engine, the phase-field variable $u$ evolves according to:
+The model learns and predicts the discrete time evolution of the Allen-Cahn equation. The phase-field order parameter $u$ evolves according to Allen-Cahn dynamics:
 
 $$ \frac{\partial u}{\partial t} = L \left( \epsilon^2 \nabla^2 u - W(u^3 - u) \right) $$
 
