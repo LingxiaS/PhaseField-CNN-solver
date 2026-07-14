@@ -1,6 +1,6 @@
 # Phase-Field AI Surrogate Solver
 
-This repository implements a Convolutional Neural Network (U-Net) as an autoregressive surrogate solver for the Allen-Cahn equation. It demonstrates how Deep Learning can dramatically accelerate the prediction of stiff nonlinear partial differential equations (PDEs) used in materials science to model microstructural evolution.
+This repository implements a Convolutional Neural Network (U-Net) as an autoregressive surrogate solver for the Allen-Cahn equation. It demonstrates how Deep Learning can be used in the prediction of stiff nonlinear partial differential equations (PDEs) employed in materials science to model microstructural evolution.
 
 ### The Governing Physics
 
