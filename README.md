@@ -1,17 +1,22 @@
 # Phase-Field AI Surrogate Solver
 
-This repository explores hybrid numerical and machine learning approaches to solve the Allen-Cahn equation, a stiff parabolic partial differential equation (PDE) used to model phase separation and microstructural evolution.
+This repository implements a Convolutional Neural Network (U-Net) as an autoregressive surrogate solver for the Allen-Cahn equation. It demonstrates how Deep Learning can dramatically accelerate the prediction of stiff nonlinear partial differential equations (PDEs) used in materials science to model microstructural evolution.
 
-## Project Overview
+*(Place your generated `demo.gif` here)*
+![Phase-Field Demo](demo.gif)
 
-1. **Numerical Baseline (FDM):** Implemented a multi-core optimized Finite Difference Method (explicit Euler scheme) to generate highly accurate, physically consistent phase-coarsening data.
-2. **ML Surrogate Model (U-Net):** Designed and trained a Convolutional Neural Network (U-Net) to act as an autoregressive surrogate solver. The model learns the transient phase-field dynamics, mapping the system state at $t$ to $t+\Delta t$.
+## Project Architecture
+The project is strictly modularized for clean research and deployment:
+* `core/fdm_solver.py`: A highly optimized multi-core Finite Difference Method solver acting as the physics engine for ground truth data generation.
+* `core/model.py`: The U-Net PyTorch architecture designed for pixel-to-pixel phase-field mapping.
+* `train.py`: The data generation and training pipeline.
+* `evaluate.py`: The inference script for autoregressive prediction on unseen random seeds.
 
-## Results and Visualization
-The U-Net was trained on frames generated from randomly seeded initial conditions. Below is the model's performance on a **completely unseen test seed**. The surrogate model successfully predicts the interfacial dynamics autoregressively without solving the underlying PDEs.
+## Installation
 
-![Autoregressive U-Net Prediction](allen_cahn_unet_prediction_compare.png)
+Clone the repository and install the required dependencies:
 
-## Repository Structure
-* `allen_cahn_fdm.py`: Base FDM solver for data generation and verification.
-* `allen_cahn_unet.py`: Multi-core data pipeline, U-Net architecture, training loop, and autoregressive evaluation.
+```bash
+git clone [https://github.com/YourUsername/PhaseField-UNet.git](https://github.com/YourUsername/PhaseField-UNet.git)
+cd PhaseField-UNet
+pip install -r requirements.txt
