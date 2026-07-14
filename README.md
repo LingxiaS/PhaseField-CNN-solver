@@ -18,8 +18,8 @@ Where:
 ![Phase-Field Demo](demo.gif)
 
 ## Project Architecture
-The project is strictly modularized for clean deployment:
-* `core/fdm_solver.py`: A multi-core Finite Difference Method solver for ground truth data generation.
+The project is modularized for clean deployment:
+* `core/fdm_solver.py`: A multi-core Finite Difference Method solver for ground truth Allen-Cahn dynamics.
 * `core/model.py`: The U-Net PyTorch architecture designed for phase-field evolution.
 * `train.py`: The data generation and training pipeline.
 * `evaluate.py`: The inference script for autoregressive prediction on unseen random seeds.
