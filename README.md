@@ -2,7 +2,19 @@
 
 This repository implements a Convolutional Neural Network (U-Net) as an autoregressive surrogate solver for the Allen-Cahn equation. It demonstrates how Deep Learning can dramatically accelerate the prediction of stiff nonlinear partial differential equations (PDEs) used in materials science to model microstructural evolution.
 
-*(Place your generated `demo.gif` here)*
+### The Governing Physics
+
+The model learns the discrete time evolution of the Allen-Cahn equation. Based on the explicit finite difference scheme implemented in the physics engine, the phase-field variable $u$ evolves according to:
+
+$$ \frac{\partial u}{\partial t} = L \left( \epsilon^2 \nabla^2 u - W(u^3 - u) \right) $$
+
+Where:
+* $u$: The non-conserved phase-field order parameter.
+* $L$: Kinetic mobility coefficient.
+* $\epsilon$: Gradient energy coefficient (controls interfacial energy and thickness).
+* $W$: Double-well barrier height.
+* $\nabla^2 u$: The spatial Laplacian, computed via a 2D 5-point stencil.
+
 ![Phase-Field Demo](demo.gif)
 
 ## Project Architecture
@@ -17,6 +29,6 @@ The project is strictly modularized for clean research and deployment:
 Clone the repository and install the required dependencies:
 
 ```bash
-git clone [https://github.com/YourUsername/PhaseField-UNet.git](https://github.com/YourUsername/PhaseField-UNet.git)
-cd PhaseField-UNet
+git clone https://github.com/LingxiaS/PhaseField-CNN-solver
+cd PhaseField-CNN-solver
 pip install -r requirements.txt
