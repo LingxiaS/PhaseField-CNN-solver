@@ -19,7 +19,7 @@ Where:
 
 ## Performance & Accuracy Benchmark
 
-To evaluate the efficiency and physical fidelity of the U-Net surrogate model against the traditional explicit Finite Difference Method (FDM), a benchmark test was conducted on an Apple Silicon MacBook Pro. 
+To evaluate the efficiency and physical fidelity of the U-Net surrogate model against the traditional explicit Finite Difference Method (FDM), a benchmark test was conducted on an Apple Silicon MacBook. 
 
 The evaluation measures both computation speed (inference vs. numerical iteration) and prediction accuracy of the trained model (taking FDM as the ground truth).
 
