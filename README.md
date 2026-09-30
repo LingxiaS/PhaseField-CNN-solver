@@ -19,16 +19,16 @@ Where:
 
 ## Performance & Accuracy Benchmark
 
-To evaluate the efficiency and physical fidelity of the U-Net surrogate model against the traditional explicit Finite Difference Method (FDM), a benchmark test was conducted on an **Apple Silicon MacBook Pro**. 
+To evaluate the efficiency and physical fidelity of the U-Net surrogate model against the traditional explicit Finite Difference Method (FDM), a benchmark test was conducted on an Apple Silicon MacBook Pro. 
 
-The evaluation measures both computation speed (inference vs. numerical integration) and prediction accuracy across single-step and autoregressive multi-step rollouts.
+The evaluation measures both computation speed (inference vs. numerical iteration) and prediction accuracy of the trained model (taking FDM as the ground truth).
 
 ### Quantitative Comparison
 
 | Evaluation Stage | Equivalent FDM Steps | FDM Time | U-Net Time | Speedup Factor | Mean Squared Error (MSE) | Relative $L_2$ Error |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Single Step** ($t=300 \rightarrow 400$) | 100 steps | 48.61 ms | **9.05 ms** | **5.37x Faster** | $1.65 \times 10^{-4}$ | **1.42%** |
-| **Autoregressive 2-Step** ($t=300 \rightarrow 500$) | 200 steps | 98.59 ms | **18.04 ms** | **5.46x Faster** | $3.31 \times 10^{-4}$ | **1.99%** |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Single Step**<br>($t = 300 \rightarrow 400$) | 100 steps | 48.61 ms | 9.05 ms | 5.37x Faster | $1.65 \times 10^{-4}$ | 1.42% |
+| **Autoregressive 2-Step**<br>($t = 300 \rightarrow 500$) | 200 steps | 98.59 ms | 18.04 ms | 5.46x Faster | $3.31 \times 10^{-4}$ | 1.99% |
 
 ### Key Takeaways
 
