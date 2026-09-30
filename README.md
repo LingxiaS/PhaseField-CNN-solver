@@ -32,8 +32,8 @@ The evaluation measures both computation speed (inference vs. numerical iteratio
 
 ### Key Takeaways
 
-* **Significant Acceleration**: The trained surrogate model provides a consistent **~5.5x speedup** over the numerical FDM solver by skipping 100 explicit integration time steps in a single forward pass.
-* **High Physical Fidelity**: The surrogate model captures complex microstructural evolution with minimal loss of accuracy, maintaining a **Relative $L_2$ Error below 2%** even during autoregressive rollouts.
+* **Significant Acceleration**: The trained surrogate model provides a consistent **~5.5x speedup** over the numerical FDM solver by skipping 100 explicit time steps in a single forward pass.
+* **High Physical Fidelity**: The surrogate model captures complex microstructural evolution with minimal loss of accuracy, maintaining a **Relative $L_2$ Error below 2%** even during autoregressive step.
 * **Stable Rollouts**: Error accumulation across multiple autoregressive steps remains remarkably low, demonstrating the model's robustness in handling non-linear phase-field dynamics over long time horizons.
 
 
